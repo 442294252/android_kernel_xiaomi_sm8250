@@ -69,14 +69,20 @@ echo "[*] Setting up ccache in $CCACHE_DIR..."
 mkdir -p "$CCACHE_DIR"
 
 # ==========================================
-# KernelSU Setup
+# KernelSU Setup (BakaSU, 曾用名 ReSukiSU)
 # ==========================================
+# 版本可固定，例如：KSU_VERSION=v4.1.0 ./build_kernel.sh lmi ksu miui
+# 留空则跟随上游 main 的最新提交
+KSU_SETUP_URL="${KSU_SETUP_URL:-https://raw.githubusercontent.com/ReSukiSU/ReSukiSU/main/kernel/setup.sh}"
+KSU_VERSION="${KSU_VERSION:-main}"
+
 if [ "$ENABLE_KSU" -eq 1 ]; then
     echo "==========================================="
-    echo " [*] Initializing KernelSU (ReSukiSU) Setup"
+    echo " [*] Initializing KernelSU (BakaSU) Setup"
     echo "==========================================="
-    echo "[*] Downloading and running ReSukiSU remote setup script..."
-    curl -LSs "https://raw.githubusercontent.com/ReSukiSU/ReSukiSU/main/kernel/setup.sh" | bash
+    echo "[*] KernelSU ref: ${KSU_VERSION}"
+    echo "[*] Downloading and running BakaSU remote setup script..."
+    curl -LSs "$KSU_SETUP_URL" | bash -s "$KSU_VERSION"
     echo "[+] KernelSU setup finished."
 fi
 
@@ -206,11 +212,15 @@ build_target() {
 
     # 2. KernelSU configurations
     if [ "$ENABLE_KSU" -eq 1 ]; then
-        echo "[*] Injecting KernelSU & SUSFS configurations..."
+        echo "[*] Injecting KernelSU (BakaSU) & SUSFS configurations..."
+        # BakaSU 的 hook 方式是 choice，三者互斥；4.19 非 GKI 只能走 SuSFS inline hook
         scripts/config --file "${OUT_DIR}/.config" \
             -e KSU \
             -e THREAD_INFO_IN_TASK \
-            -e KSU_SUSFS
+            -d KSU_TRACEPOINT_HOOK \
+            -d KSU_MANUAL_HOOK \
+            -e KSU_SUSFS \
+            -e KALLSYMS_ALL
     fi
 
     # 3. MIUI configurations
@@ -296,7 +306,7 @@ build_target() {
         # 确定 ZIP 文件名
         local KSU_ZIP_STR="NoKernelSU"
         if [ "$ENABLE_KSU" -eq 1 ]; then
-            KSU_ZIP_STR="ReSukiSU-SuSFS"
+            KSU_ZIP_STR="BakaSU-SuSFS"
         fi
         local GIT_COMMIT_ID=$(git rev-parse --short=8 HEAD 2>/dev/null || echo "unknown")
         local OS_UPPER=$(echo "$OS_TYPE" | tr '[:lower:]' '[:upper:]')
