@@ -41,14 +41,14 @@ jobs:
   build-kernel:
     name: Build ${{ github.event.inputs.device }} | KSU:${{ github.event.inputs.ksu }} | OS:${{ github.event.inputs.target_os }}
     runs-on: ubuntu-latest
-    
+
     steps:
     - name: Checkout Repository
       uses: actions/checkout@v7
       with:
         fetch-depth: 1
 
-     - name: Set up Environment
+    - name: Set up Environment
       run: |
         sudo apt-get update
         sudo apt-get install -y bc bison build-essential ccache curl flex gawk \
@@ -57,7 +57,7 @@ jobs:
           libsdl1.2-dev libssl-dev libxml2-utils lzop pngcrush rsync \
           schedtool squashfs-tools xsltproc zip zlib1g-dev python3
         sudo apt-get install -y liblz4-tool libxml2 || true
-          
+
     - name: Cache ccache
       uses: actions/cache@v6
       with:
@@ -77,17 +77,17 @@ jobs:
     - name: Run Build Script
       run: |
         chmod +x build_kernel.sh
-        
+
         ARGS="${{ github.event.inputs.device }}"
-        
+
         if [ "${{ github.event.inputs.ksu }}" == "true" ]; then
           ARGS="$ARGS ksu"
         fi
-        
+
         if [ "${{ github.event.inputs.target_os }}" != "both" ]; then
           ARGS="$ARGS ${{ github.event.inputs.target_os }}"
         fi
-        
+
         echo "Executing command: ./build_kernel.sh $ARGS"
         ./build_kernel.sh $ARGS
 
@@ -96,4 +96,4 @@ jobs:
       with:
         name: APTKernel-${{ github.event.inputs.device }}-${{ github.event.inputs.target_os }}-${{ github.run_id }}
         path: APTKernel_*.zip
-        compression-level: 0 # 已经被 zip 压缩过，无需再二次压缩
+        compression-level: 0
