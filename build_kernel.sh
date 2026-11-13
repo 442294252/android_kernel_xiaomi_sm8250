@@ -361,7 +361,15 @@ build_target() {
         # 确定 ZIP 文件名
         local KSU_ZIP_STR="NoKernelSU"
         if [ "$ENABLE_KSU" -eq 1 ]; then
-            KSU_ZIP_STR="BakaSU-SuSFS"
+            local KSU_VER=""
+            if [ -d "${KERNEL_DIR}/KernelSU/.git" ]; then
+                KSU_VER=$(git -C "${KERNEL_DIR}/KernelSU" describe --tags --abbrev=0 2>/dev/null || true)
+            fi
+            if [ -n "$KSU_VER" ]; then
+                KSU_ZIP_STR="BakaSU-${KSU_VER}-SuSFS"
+            else
+                KSU_ZIP_STR="BakaSU-SuSFS"
+            fi
         fi
         local GIT_COMMIT_ID=$(git rev-parse --short=8 HEAD 2>/dev/null || echo "unknown")
         local OS_UPPER=$(echo "$OS_TYPE" | tr '[:lower:]' '[:upper:]')
