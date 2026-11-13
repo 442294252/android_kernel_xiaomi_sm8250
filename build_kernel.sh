@@ -107,10 +107,65 @@ echo "==========================================="
 echo " [*] Initializing AnyKernel3 Workspace"
 echo "==========================================="
 rm -rf anykernel
-echo "[*] Cloning AnyKernel3..."
-git clone https://github.com/AstideLabs/AnyKernel3 -b kona --single-branch --depth=1 anykernel
+echo "[*] Cloning AnyKernel3 (osm0sis)..."
+git clone https://github.com/osm0sis/AnyKernel3 -b master --single-branch --depth=1 anykernel
 echo "[+] AnyKernel3 cloned successfully."
-echo "[*] Adjusting AnyKernel3..."
+echo "[*] Writing anykernel.sh (APTKernel template)..."
+cat > anykernel/anykernel.sh <<'AK3_TEMPLATE_EOF'
+### AnyKernel3 Ramdisk Mod Script
+## osm0sis @ xda-developers
+
+### AnyKernel setup
+# global properties
+properties() { '
+kernel.string=APTKernel by ApartTUSITU @ AstideLabs
+do.devicecheck=1
+do.modules=0
+do.systemless=1
+do.cleanup=1
+do.cleanuponabort=0
+device.name1=PLACEHOLDER_DEVICE
+supported.versions=
+supported.patchlevels=
+supported.vendorpatchlevels=
+'; } # end properties
+
+
+### AnyKernel install
+# boot shell variables
+BLOCK=boot;
+IS_SLOT_DEVICE=auto;
+RAMDISK_COMPRESSION=auto;
+PATCH_VBMETA_FLAG=auto;
+NO_BLOCK_DISPLAY=1;
+
+# import functions/variables and setup patching - see for reference (DO NOT REMOVE)
+. tools/ak3-core.sh;
+
+# Select the correct image to flash
+userflavor="$(file_getprop /system/build.prop "ro.build.flavor")";
+case "$userflavor" in
+    missi*|qssi*) os="miui"; os_string="MIUI ROM";;
+    *) os="aosp"; os_string="AOSP ROM";;
+esac;
+ui_print "  -> $os_string is detected!";
+if [ -f $AKHOME/kernels/$os/Image ] && [ -f $AKHOME/kernels/$os/dtb ] && [ -f $AKHOME/kernels/$os/dtbo.img ]; then
+    mv $AKHOME/kernels/$os/Image $AKHOME/Image;
+    mv $AKHOME/kernels/$os/dtb $AKHOME/dtb;
+    mv $AKHOME/kernels/$os/dtbo.img $AKHOME/dtbo.img;
+else
+    ui_print "  -> There is no kernel files for $os_string in this zip! Aborting...";
+    ui_print "  -> Please check that you have the correct kernel zip!";
+    exit 1;
+fi;
+
+# boot install
+split_boot;
+
+flash_boot;
+flash_generic dtbo;
+## end boot install
+AK3_TEMPLATE_EOF
 sed -i "s/^device\.name1=.*/device.name1=${DEVICE_NAME}/" anykernel/anykernel.sh
 echo "[*] AnyKernel3 adjusted successfully."
 echo "==========================================="
